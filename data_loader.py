@@ -2,11 +2,13 @@ import os
 import numpy as np
 import torch
 from torch.utils.data import Dataset
+from noise_utils import add_noise   # ===== TAMBAHAN =====
 
 class AudioDataset(Dataset):
-    def __init__(self, root_dir):
+    def __init__(self, root_dir, use_noise=False):   # ===== TAMBAHAN =====
         self.data = []
         self.labels = []
+        self.use_noise = use_noise   # ===== TAMBAHAN =====
 
         classes = {"bonafide": 0, "spoof": 1}
 
@@ -32,6 +34,10 @@ class AudioDataset(Dataset):
             x = np.pad(x, ((0, 0), (0, pad_width)), mode='constant')
         else:
             x = x[:, :MAX_LEN]
+
+        # ===== TAMBAHAN NOISE =====
+        if self.use_noise:
+            x = add_noise(x)
 
         # ===== TAMBAH CHANNEL =====
         x = np.expand_dims(x, axis=0)  # (1, freq, time)
