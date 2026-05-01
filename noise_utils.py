@@ -5,41 +5,48 @@ import numpy as np
 
 noise_folder = "free_sound_noise"
 
+
 def add_noise(audio, sr=16000, noise_level=0.02):
     """
-    Menambahkan noise random ke audio input.
+    Menambahkan noise ke fitur spectrogram (.npy)
 
-    Parameter:
-    audio       : numpy array audio clean
-    sr          : sample rate
-    noise_level : kekuatan noise (0.01 - 0.05 disarankan)
-
-    Return:
-    audio + noise
+    Input:
+    audio = numpy array shape (257,198)
     """
 
-    # Ambil semua file wav
+    # Ambil file noise wav
     noise_files = [f for f in os.listdir(noise_folder) if f.endswith(".wav")]
 
-    # Pilih noise random
+    # Pilih random noise
     noise_file = random.choice(noise_files)
     noise_path = os.path.join(noise_folder, noise_file)
 
-    # Load noise
-    noise, _ = librosa.load(noise_path, sr=sr)
+    # Load noise waveform
+    noise_wave, _ = librosa.load(noise_path, sr=sr)
 
-    # Jika noise lebih pendek, ulangi
-    if len(noise) < len(audio):
-        repeat = int(np.ceil(len(audio) / len(noise)))
-        noise = np.tile(noise, repeat)
+    # Ubah noise ke spectrogram
+    noise_spec = np.abs(librosa.stft(noise_wave, n_fft=512, hop_length=128))
 
-    # Potong sesuai panjang audio
-    noise = noise[:len(audio)]
+    # Resize ke ukuran data utama
+    target_h, target_w = audio.shape
 
-    # Campur clean + noise
-    mixed_audio = audio + noise_level * noise
+    # Jika kurang lebar → ulangi
+    if noise_spec.shape[1] < target_w:
+        repeat = int(np.ceil(target_w / noise_spec.shape[1]))
+        noise_spec = np.tile(noise_spec, (1, repeat))
 
-    # Normalisasi agar tidak clipping
-    mixed_audio = mixed_audio / np.max(np.abs(mixed_audio) + 1e-8)
+    # Potong sesuai ukuran target
+    noise_spec = noise_spec[:target_h, :target_w]
 
-    return mixed_audio
+    # Jika tinggi kurang
+    if noise_spec.shape[0] < target_h:
+        pad_h = target_h - noise_spec.shape[0]
+        noise_spec = np.pad(noise_spec, ((0, pad_h), (0, 0)), mode='constant')
+
+    # Tambahkan noise ke spectrogram utama
+    mixed_audio = audio + noise_level * noise_spec
+
+    # Normalisasi
+    mixed_audio = mixed_audio / (np.max(np.abs(mixed_audio)) + 1e-8)
+
+    return mixed_audio.astype(np.float32)
