@@ -7,12 +7,6 @@ noise_folder = "free_sound_noise"
 
 
 def add_noise(audio, sr=16000, noise_level=0.02):
-    """
-    Menambahkan noise ke fitur spectrogram (.npy)
-
-    Input:
-    audio = numpy array shape (257,198)
-    """
 
     # Ambil file noise wav
     noise_files = [f for f in os.listdir(noise_folder) if f.endswith(".wav")]

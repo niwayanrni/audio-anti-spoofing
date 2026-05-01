@@ -32,20 +32,16 @@ kl_loss = nn.KLDivLoss(reduction="batchmean")
 
 optimizer = torch.optim.Adam(student.parameters(), lr=0.001)
 
-# ===== KD PARAMETER =====
 temperature = 4.0
 alpha = 0.7
 
-# ===== EARLY STOPPING =====
 best_val_loss = float("inf")
 patience = 10
 counter = 0
 
-# ===== TRAINING =====
 epochs = 100
 
 for epoch in range(epochs):
-    # ===== TRAIN =====
     student.train()
     train_loss = 0
 
@@ -78,7 +74,6 @@ for epoch in range(epochs):
 
         train_loss += loss.item()
 
-    # ===== VALIDATION =====
     student.eval()
     val_loss = 0
 
@@ -93,7 +88,6 @@ for epoch in range(epochs):
 
     print(f"Epoch {epoch+1}/{epochs} | Train Loss: {train_loss:.4f} | Val Loss: {val_loss:.4f}")
 
-    # ===== EARLY STOPPING =====
     if val_loss < best_val_loss:
         best_val_loss = val_loss
         counter = 0

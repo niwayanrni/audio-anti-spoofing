@@ -4,8 +4,8 @@ from torch.utils.data import DataLoader
 from aasist import AASIST_Style
 from data_loader import AudioDataset 
 
-train_dataset = AudioDataset("processed_data/train", use_noise=True)   # TAMBAHAN
-val_dataset = AudioDataset("processed_data/val", use_noise=False)      # TAMBAHAN
+train_dataset = AudioDataset("processed_data/train", use_noise=True)   
+val_dataset = AudioDataset("processed_data/val", use_noise=False)      
 
 train_loader = DataLoader(train_dataset, batch_size=8, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=8)
