@@ -1,12 +1,24 @@
+import sys
+import os
+
+# ======================
+# FIX PATH (BIAR IMPORT AMAN)
+# ======================
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(BASE_DIR)
+
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from aasist import AASIST_Style
 from data_loader import AudioDataset
+import numpy as np
 
-# ===== LOAD DATA =====
-train_dataset = AudioDataset("processed_data/train")
-val_dataset = AudioDataset("processed_data/val")
+# ======================
+# LOAD DATA
+# ======================
+train_dataset = AudioDataset(os.path.join(BASE_DIR, "processed_data/train"))
+val_dataset = AudioDataset(os.path.join(BASE_DIR, "processed_data/val"))
 
 train_loader = DataLoader(train_dataset, batch_size=8, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=8)
@@ -14,26 +26,36 @@ val_loader = DataLoader(val_dataset, batch_size=8)
 print("Train size:", len(train_dataset))
 print("Val size:", len(val_dataset))
 
-# ===== DEVICE =====
+# ======================
+# DEVICE
+# ======================
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Device:", device)
 
-# ===== MODEL =====
+# ======================
+# MODEL
+# ======================
 model = AASIST_Style().to(device)
 
-# ===== LOSS & OPTIMIZER =====
+# ======================
+# LOSS & OPTIMIZER
+# ======================
 criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
-# ===== EARLY STOPPING SETUP =====
-best_val_loss = float("inf")
-patience = 10
-counter = 0
+# ======================
+# LOGGING LOSS
+# ======================
+train_losses = []
+val_losses = []
 
-# ===== TRAINING =====
+# ======================
+# TRAINING
+# ======================
 epochs = 100
 
 for epoch in range(epochs):
+
     # ===== TRAIN =====
     model.train()
     train_loss = 0
@@ -50,6 +72,9 @@ for epoch in range(epochs):
 
         train_loss += loss.item()
 
+    train_loss /= len(train_loader)
+    train_losses.append(train_loss)
+
     # ===== VALIDATION =====
     model.eval()
     val_loss = 0
@@ -63,18 +88,27 @@ for epoch in range(epochs):
 
             val_loss += loss.item()
 
+    val_loss /= len(val_loader)
+    val_losses.append(val_loss)
+
     print(f"Epoch {epoch+1}/{epochs} | Train Loss: {train_loss:.4f} | Val Loss: {val_loss:.4f}")
 
-    # ===== EARLY STOPPING =====
-    if val_loss < best_val_loss:
-        best_val_loss = val_loss
-        counter = 0
-        torch.save(model.state_dict(), "best_model.pth")  # simpan model terbaik
-    else:
-        counter += 1
+# ======================
+# SAVE MODEL (AMAN)
+# ======================
+os.makedirs(os.path.join(BASE_DIR, "model"), exist_ok=True)
 
-    if counter >= patience:
-        print("Early stopping triggered!")
-        break
+model_path = os.path.join(BASE_DIR, "model", "best_model_loss_demo.pth")
+torch.save(model.state_dict(), model_path)
+
+# ======================
+# SAVE LOSS
+# ======================
+os.makedirs(os.path.join(BASE_DIR, "visualisasi"), exist_ok=True)
+
+np.save(os.path.join(BASE_DIR, "visualisasi", "train_loss.npy"), train_losses)
+np.save(os.path.join(BASE_DIR, "visualisasi", "val_loss.npy"), val_losses)
 
 print("🔥 Training selesai!")
+print("Model disimpan di:", model_path)
+print("Loss tersimpan di folder visualisasi/")

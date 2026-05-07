@@ -10,43 +10,35 @@ from aasist import AASIST_Style
 from data_loader import AudioDataset
 from sklearn.metrics import roc_curve
 
-
-MODEL_PATH = os.path.join(BASE_DIR, "model", "best_model_fkd.pth")
-DATA_PATH  = os.path.join(BASE_DIR, "processed_data", "test")
-
+MODEL_PATH = os.path.join(BASE_DIR, "model", "best_model.pth")
+DATA_PATH = os.path.join(BASE_DIR, "processed_data", "test")
 
 test_dataset = AudioDataset(DATA_PATH)
 test_loader = DataLoader(test_dataset, batch_size=8)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-
 model = AASIST_Style().to(device)
 model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
 model.eval()
 
-
 total_params = sum(p.numel() for p in model.parameters())
 trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
 
-
-scores = []
-labels = []
+scores, labels = [], []
 
 start = time.time()
 
 with torch.no_grad():
     for x, y in test_loader:
         x = x.to(device)
+        out = model(x)
 
-        outputs = model(x)
-        probs = torch.softmax(outputs, dim=1)
-
-        scores.extend(probs[:, 1].cpu().numpy())
+        probs = torch.softmax(out, dim=1)
+        scores.extend(probs[:, 1].cpu().numpy())  # spoof prob
         labels.extend(y.numpy())
 
 end = time.time()
-
 
 scores = np.array(scores)
 labels = np.array(labels)
@@ -58,14 +50,21 @@ fpr, tpr, thresholds = roc_curve(labels, scores, pos_label=1)
 fnr = 1 - tpr
 
 # ======================
-# EER (VALID)
+# EER (OLD vs NEW)
 # ======================
+eer_old = fpr[np.nanargmin(np.abs(fnr - fpr))]
+
 eer_idx = np.nanargmin(np.abs(fnr - fpr))
-eer = np.mean([fpr[eer_idx], fnr[eer_idx]])
+eer_new = np.mean([fpr[eer_idx], fnr[eer_idx]])
 
 # ======================
-# min t-DCF (VALID)
+# min-tDCF
 # ======================
+
+# ❌ versi lama (approx)
+min_tdcf_old = np.min(fpr + fnr) / 2
+
+# ✅ versi baru (lebih valid)
 Pspoof = 0.05
 Ptar = (1 - Pspoof) * 0.99
 Pnon = (1 - Pspoof) * 0.01
@@ -74,13 +73,34 @@ Cmiss = 1
 Cfa = 10
 
 tdcf_curve = Cmiss * Ptar * fnr + Cfa * Pspoof * fpr
-min_tdcf = np.min(tdcf_curve)
+min_tdcf_new = np.min(tdcf_curve)
 
+import os
 
-print("===== HASIL SKENARIO 2 (FKD v2) =====")
-print(f"EER            : {eer*100:.6f}%")
-print(f"min t-DCF      : {min_tdcf:.6f}")
+os.makedirs("visualisasi", exist_ok=True)
+
+np.save("visualisasi/scores.npy", scores)
+np.save("visualisasi/labels.npy", labels)
+
+print("Scores & labels disimpan!")
+
+# ======================
+# OUTPUT
+# ======================
+print("===== HASIL EVALUASI =====")
+
+print("\n--- EER ---")
+print(f"EER (lama) : {eer_old*100:.6f}%")
+print(f"EER (baru) : {eer_new*100:.6f}%")
+
+print("\n--- min t-DCF ---")
+print(f"tDCF (lama) : {min_tdcf_old:.6f}")
+print(f"tDCF (baru) : {min_tdcf_new:.6f}")
+
+print("\n--- Model Info ---")
 print(f"Total Parameter: {total_params:,}")
 print(f"Trainable Param: {trainable_params:,}")
-print(f"Total Inferensi: {end-start:.6f} detik")
-print(f"Rata-rata/Data : {(end-start)/len(test_dataset):.8f} detik")
+
+print("\n--- Inference ---")
+print(f"Total waktu : {end-start:.6f} detik")
+print(f"Per data    : {(end-start)/len(test_dataset):.8f} detik")

@@ -24,26 +24,34 @@ class AASIST_Style(nn.Module):
             nn.Sigmoid()
         )
 
-        # ===== GLOBAL POOL (BIAR AMAN) =====
+        # ===== GLOBAL POOL =====
         self.global_pool = nn.AdaptiveAvgPool2d((1, 1))
 
         # ===== CLASSIFIER =====
         self.fc1 = nn.Linear(64, 128)
         self.fc2 = nn.Linear(128, 2)
 
-    def forward(self, x):
+    # ======================
+    # 🔥 EMBEDDING FUNCTION (BARU)
+    # ======================
+    def extract_embedding(self, x):
         x = self.pool(F.relu(self.bn1(self.conv1(x))))
         x = self.pool(F.relu(self.bn2(self.conv2(x))))
         x = self.pool(F.relu(self.bn3(self.conv3(x))))
 
-        # ===== ATTENTION =====
         attn = self.attention(x)
         x = x * attn
 
-        # ===== GLOBAL POOL =====
-        x = self.global_pool(x)  # → (batch, 64, 1, 1)
+        x = self.global_pool(x)
+        x = x.view(x.size(0), -1)  # 🔥 (batch, 64)
 
-        x = x.view(x.size(0), -1)  # → (batch, 64)
+        return x
+
+    # ======================
+    # ORIGINAL FORWARD (JANGAN DIUBAH)
+    # ======================
+    def forward(self, x):
+        x = self.extract_embedding(x)  # pakai embedding
 
         x = F.relu(self.fc1(x))
         x = self.fc2(x)

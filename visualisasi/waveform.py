@@ -2,13 +2,10 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-folder = "processed_data/train/bonafide/0101BFD00002.npy"
+folder = r"processed_data/train/bonafide"
 
-# ambil file pertama
 files = os.listdir(folder)
-file_path = os.path.join(folder, files[0])
-
-print("File yang dibuka:", file_path)
+file_path = os.path.join(folder, files[0])  # ambil 1 file
 
 spec = np.load(file_path)
 
