@@ -2,44 +2,112 @@ import os
 import numpy as np
 import torch
 from torch.utils.data import Dataset
-from noise_utils import add_noise 
+from noise_utils import add_noise
 
 class AudioDataset(Dataset):
-    def __init__(self, root_dir, use_noise=False):  
+    def __init__(
+        self,
+        root_dir,
+        use_noise=False,
+        use_freqmix=False
+    ):
+
         self.data = []
         self.labels = []
-        self.use_noise = use_noise 
 
-        classes = {"bonafide": 0, "spoof": 1}
+        self.use_noise = use_noise
+        self.use_freqmix = use_freqmix
+
+        classes = {
+            "bonafide": 0,
+            "spoof": 1
+        }
 
         for label in classes:
             label_path = os.path.join(root_dir, label)
 
             for file in os.listdir(label_path):
+
                 if file.endswith(".npy"):
-                    self.data.append(os.path.join(label_path, file))
+
+                    self.data.append(
+                        os.path.join(label_path, file)
+                    )
+
                     self.labels.append(classes[label])
 
     def __len__(self):
         return len(self.data)
 
+    def apply_freqmix(self, x, idx):
+
+        # ambil sample random lain
+        rand_idx = np.random.randint(0, len(self.data))
+
+        x2 = np.load(self.data[rand_idx])
+
+        MAX_LEN = 256
+
+        # padding / cropping x2
+        if x2.shape[1] < MAX_LEN:
+            pad_width = MAX_LEN - x2.shape[1]
+
+            x2 = np.pad(
+                x2,
+                ((0, 0), (0, pad_width)),
+                mode='constant'
+            )
+
+        else:
+            x2 = x2[:, :MAX_LEN]
+
+        # lambda mixing
+        lam = np.random.beta(0.5, 0.5)
+
+        # FreqMix
+        mixed_x = lam * x + (1 - lam) * x2
+
+        return mixed_x
+
     def __getitem__(self, idx):
+
         x = np.load(self.data[idx])
 
         MAX_LEN = 256
 
+        # padding / cropping
         if x.shape[1] < MAX_LEN:
+
             pad_width = MAX_LEN - x.shape[1]
-            x = np.pad(x, ((0, 0), (0, pad_width)), mode='constant')
+
+            x = np.pad(
+                x,
+                ((0, 0), (0, pad_width)),
+                mode='constant'
+            )
+
         else:
             x = x[:, :MAX_LEN]
 
+        # ===== FREQMIX =====
+        if self.use_freqmix:
+            x = self.apply_freqmix(x, idx)
+
+        # ===== NOISE =====
         if self.use_noise:
             x = add_noise(x)
 
-        x = np.expand_dims(x, axis=0)  # (1, freq, time)
+        # channel dimension
+        x = np.expand_dims(x, axis=0)
 
-        x = torch.tensor(x, dtype=torch.float32)
-        y = torch.tensor(self.labels[idx], dtype=torch.long)
+        x = torch.tensor(
+            x,
+            dtype=torch.float32
+        )
+
+        y = torch.tensor(
+            self.labels[idx],
+            dtype=torch.long
+        )
 
         return x, y
