@@ -10,8 +10,8 @@ from aasist import AASIST_Style
 from data_loader import AudioDataset
 from sklearn.metrics import roc_curve
 
-MODEL_PATH = os.path.join(BASE_DIR, "model", "best_model.pth")
-DATA_PATH = os.path.join(BASE_DIR, "processed_data", "test")
+MODEL_PATH = os.path.join(BASE_DIR, "model", "best_model_fkd_v2.pth")
+DATA_PATH = os.path.join(BASE_DIR, "processed_data", "test_noisy")
 
 test_dataset = AudioDataset(DATA_PATH)
 test_loader = DataLoader(test_dataset, batch_size=8)
@@ -35,7 +35,7 @@ with torch.no_grad():
         out = model(x)
 
         probs = torch.softmax(out, dim=1)
-        scores.extend(probs[:, 1].cpu().numpy())  # spoof prob
+        scores.extend(probs[:, 1].cpu().numpy()) 
         labels.extend(y.numpy())
 
 end = time.time()
@@ -43,28 +43,15 @@ end = time.time()
 scores = np.array(scores)
 labels = np.array(labels)
 
-# ======================
-# ROC
-# ======================
+
 fpr, tpr, thresholds = roc_curve(labels, scores, pos_label=1)
 fnr = 1 - tpr
 
-# ======================
-# EER (OLD vs NEW)
-# ======================
-eer_old = fpr[np.nanargmin(np.abs(fnr - fpr))]
 
 eer_idx = np.nanargmin(np.abs(fnr - fpr))
 eer_new = np.mean([fpr[eer_idx], fnr[eer_idx]])
 
-# ======================
-# min-tDCF
-# ======================
 
-# ❌ versi lama (approx)
-min_tdcf_old = np.min(fpr + fnr) / 2
-
-# ✅ versi baru (lebih valid)
 Pspoof = 0.05
 Ptar = (1 - Pspoof) * 0.99
 Pnon = (1 - Pspoof) * 0.01
@@ -79,8 +66,8 @@ import os
 
 os.makedirs("visualisasi", exist_ok=True)
 
-np.save("visualisasi/scores.npy", scores)
-np.save("visualisasi/labels.npy", labels)
+np.save("visualisasi/scores_s4.npy", scores)
+np.save("visualisasi/labels_s4.npy", labels)
 
 print("Scores & labels disimpan!")
 
@@ -90,12 +77,10 @@ print("Scores & labels disimpan!")
 print("===== HASIL EVALUASI =====")
 
 print("\n--- EER ---")
-print(f"EER (lama) : {eer_old*100:.6f}%")
-print(f"EER (baru) : {eer_new*100:.6f}%")
+print(f"EER : {eer_new*100:.6f}%")
 
 print("\n--- min t-DCF ---")
-print(f"tDCF (lama) : {min_tdcf_old:.6f}")
-print(f"tDCF (baru) : {min_tdcf_new:.6f}")
+print(f"min t-DCF : {min_tdcf_new:.6f}")
 
 print("\n--- Model Info ---")
 print(f"Total Parameter: {total_params:,}")

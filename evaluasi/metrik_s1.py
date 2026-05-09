@@ -22,7 +22,7 @@ SCENARIOS = {
         "data": "processed_data/test"
     },
     "Skenario 3 (AASIST + Noise)": {
-        "model": "model/best_model_noise.pth",
+        "model": "model/best_model_noise1.pth",
         "data": "processed_data/test_noisy"
     },
     "Skenario 4 (AASIST + FKD + Noise)": {
@@ -98,14 +98,3 @@ for name, cfg in SCENARIOS.items():
 os.makedirs("visualisasi", exist_ok=True)
 np.save("visualisasi/scores.npy", scores)
 np.save("visualisasi/labels.npy", labels)
-
-
-print("\n==============================")
-print("RINGKASAN HASIL")
-print("==============================")
-
-for name, eer, tdcf in results:
-    print(f"{name}")
-    print(f"  EER      : {eer:.6f}%")
-    print(f"  min-tDCF : {tdcf:.6f}")
-    print("")

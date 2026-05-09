@@ -9,10 +9,7 @@ from aasist import AASIST_Style
 from data_loader import AudioDataset
 from fkd_utils import frequency_mix
 
-# =====================================================
-# LOAD DATA
-# Student pakai dataset noisy (sudah ada noise)
-# =====================================================
+
 train_dataset = AudioDataset("processed_data/train_noisy", use_noise=False)
 val_dataset   = AudioDataset("processed_data/val", use_noise=False)
 

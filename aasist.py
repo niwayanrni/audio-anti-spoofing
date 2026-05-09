@@ -31,9 +31,7 @@ class AASIST_Style(nn.Module):
         self.fc1 = nn.Linear(64, 128)
         self.fc2 = nn.Linear(128, 2)
 
-    # ======================
-    # 🔥 EMBEDDING FUNCTION (BARU)
-    # ======================
+ 
     def extract_embedding(self, x):
         x = self.pool(F.relu(self.bn1(self.conv1(x))))
         x = self.pool(F.relu(self.bn2(self.conv2(x))))
@@ -43,15 +41,13 @@ class AASIST_Style(nn.Module):
         x = x * attn
 
         x = self.global_pool(x)
-        x = x.view(x.size(0), -1)  # 🔥 (batch, 64)
+        x = x.view(x.size(0), -1)  
 
         return x
 
-    # ======================
-    # ORIGINAL FORWARD (JANGAN DIUBAH)
-    # ======================
+
     def forward(self, x):
-        x = self.extract_embedding(x)  # pakai embedding
+        x = self.extract_embedding(x)  
 
         x = F.relu(self.fc1(x))
         x = self.fc2(x)
