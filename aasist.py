@@ -45,7 +45,6 @@ class AASIST_Style(nn.Module):
 
         return x
 
-
     def forward(self, x):
         x = self.extract_embedding(x)  
 

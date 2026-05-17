@@ -1,33 +1,80 @@
-import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-# ======================
-# PATH
-# ======================
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+train_loss = np.load(
+    "visualisasi/saved_metric/train_loss_noise.npy"
+)
 
-train_loss = np.load(os.path.join(BASE_DIR, "visualisasi", "train_loss.npy"))
-val_loss = np.load(os.path.join(BASE_DIR, "visualisasi", "val_loss.npy"))
+val_loss = np.load(
+    "visualisasi/saved_metric/val_loss_noise.npy"
+)
 
-epochs = range(1, len(train_loss) + 1)
+epochs = range(
+    1,
+    len(train_loss) + 1
+)
 
-# ======================
-# PLOT
-# ======================
-plt.figure(figsize=(8,5))
+plt.figure(figsize=(14,6))
 
-plt.plot(epochs, train_loss, label="Train Loss")
-plt.plot(epochs, val_loss, label="Validation Loss")
+plt.subplot(1,2,1)
 
-# garis best epoch
-best_epoch = np.argmin(val_loss) + 1
-plt.axvline(x=best_epoch, linestyle='--', label=f"Best Epoch: {best_epoch}")
+plt.plot(
+    epochs,
+    train_loss,
+    linewidth=2
+)
 
-plt.xlabel("Epoch")
-plt.ylabel("Loss")
-plt.title("Training & Validation Loss")
-plt.legend()
-plt.grid()
+plt.xlabel("Epoch", fontsize=10)
+plt.ylabel("Loss", fontsize=10)
+
+plt.title(
+    "Train Loss with Early Stopping",
+    fontsize=13,
+    fontweight='bold',
+    pad=15
+)
+
+plt.grid(alpha=0.3)
+
+plt.xticks(fontsize=9)
+plt.yticks(fontsize=9)
+
+plt.subplot(1,2,2)
+
+plt.plot(
+    epochs,
+    val_loss,
+    linewidth=2
+)
+
+plt.xlabel("Epoch", fontsize=10)
+plt.ylabel("Loss", fontsize=10)
+
+plt.title(
+    "Validation Loss with Early Stopping",
+    fontsize=13,
+    fontweight='bold',
+    pad=15
+)
+
+plt.grid(alpha=0.3)
+
+plt.xticks(fontsize=9)
+plt.yticks(fontsize=9)
+
+plt.suptitle(
+    "AASIST baseline",
+    fontsize=16,
+    fontweight='bold',
+    y=1.02
+)
+
+plt.tight_layout()
+
+plt.savefig(
+    "visualisasi/hasil/loss_vall_skenario3.png",
+    dpi=300,
+    bbox_inches='tight'
+)
 
 plt.show()

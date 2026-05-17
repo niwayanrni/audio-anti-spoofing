@@ -10,7 +10,7 @@ from aasist import AASIST_Style
 from data_loader import AudioDataset
 from sklearn.metrics import roc_curve
 
-MODEL_PATH = os.path.join(BASE_DIR, "model", "best_model_fkd_v2.pth")
+MODEL_PATH = os.path.join(BASE_DIR, "model", "best_model_noise.pth")
 DATA_PATH = os.path.join(BASE_DIR, "processed_data", "test_noisy")
 
 test_dataset = AudioDataset(DATA_PATH)
@@ -71,9 +71,7 @@ np.save("visualisasi/labels_s4.npy", labels)
 
 print("Scores & labels disimpan!")
 
-# ======================
-# OUTPUT
-# ======================
+#output
 print("===== HASIL EVALUASI =====")
 
 print("\n--- EER ---")

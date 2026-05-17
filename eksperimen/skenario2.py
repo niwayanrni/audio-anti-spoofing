@@ -1,102 +1,235 @@
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
+
 from aasist import AASIST_Style
 from data_loader import AudioDataset
+from fkd_utils import frequency_mix
 
-# ===== LOAD DATA =====
+
 train_dataset = AudioDataset("processed_data/train")
 val_dataset = AudioDataset("processed_data/val")
 
-train_loader = DataLoader(train_dataset, batch_size=8, shuffle=True)
-val_loader = DataLoader(val_dataset, batch_size=8)
+train_loader = DataLoader(
+    train_dataset,
+    batch_size=8,
+    shuffle=True
+)
+
+train_loader2 = DataLoader(
+    train_dataset,
+    batch_size=8,
+    shuffle=True
+)
+
+val_loader = DataLoader(
+    val_dataset,
+    batch_size=8,
+    shuffle=False
+)
 
 print("Train size:", len(train_dataset))
 print("Val size:", len(val_dataset))
 
-# ===== DEVICE =====
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+device = torch.device(
+    "cuda" if torch.cuda.is_available() else "cpu"
+)
+
 print("Device:", device)
 
-# ===== TEACHER MODEL =====
-teacher = AASIST_Style().to(device)
-teacher.load_state_dict(torch.load("best_model.pth"))
-teacher.eval()  # teacher tidak dilatih
 
-# ===== STUDENT MODEL =====
+teacher = AASIST_Style().to(device)
+
+teacher.load_state_dict(
+    torch.load("model/teacher_freqmix.pth")
+)
+
+teacher.eval()
+
+
 student = AASIST_Style().to(device)
 
-# ===== LOSS FUNCTION =====
-ce_loss = nn.CrossEntropyLoss()
-kl_loss = nn.KLDivLoss(reduction="batchmean")
 
-optimizer = torch.optim.Adam(student.parameters(), lr=0.001)
+ce_loss = nn.CrossEntropyLoss()
+
+kl_loss = nn.KLDivLoss(
+    reduction="batchmean"
+)
+
+optimizer = torch.optim.Adam(
+    student.parameters(),
+    lr=0.001
+)
 
 temperature = 4.0
 alpha = 0.7
 
+
 best_val_loss = float("inf")
+
 patience = 10
 counter = 0
 
+best_epoch = 0
+
+
+train_losses = []
+val_losses = []
+
+
 epochs = 100
 
+
 for epoch in range(epochs):
+
     student.train()
+
     train_loss = 0
 
-    for x, y in train_loader:
-        x, y = x.to(device), y.to(device)
+    for (x1, y1), (x2, y2) in zip(
+        train_loader,
+        train_loader2
+    ):
+
+        x1 = x1.to(device)
+        x2 = x2.to(device)
+        y1 = y1.to(device)
 
         optimizer.zero_grad()
 
-        # teacher output
+        x_mix = frequency_mix(
+            x1,
+            x2
+        )
+
         with torch.no_grad():
-            teacher_out = teacher(x)
 
-        # student output
-        student_out = student(x)
+            teacher_out = teacher(
+                x_mix
+            )
 
-        # CE loss (label asli)
-        loss_ce = ce_loss(student_out, y)
+        student_out = student(
+            x1
+        )
 
-        # KD loss
-        soft_teacher = torch.softmax(teacher_out / temperature, dim=1)
-        soft_student = torch.log_softmax(student_out / temperature, dim=1)
+        loss_ce = ce_loss(
+            student_out,
+            y1
+        )
 
-        loss_kd = kl_loss(soft_student, soft_teacher)
+        soft_teacher = torch.softmax(
+            teacher_out / temperature,
+            dim=1
+        )
 
-        # total loss
-        loss = alpha * loss_kd + (1 - alpha) * loss_ce
+        soft_student = torch.log_softmax(
+            student_out / temperature,
+            dim=1
+        )
+
+        loss_kd = kl_loss(
+            soft_student,
+            soft_teacher
+        )
+
+        loss = (
+            alpha * loss_kd
+            +
+            (1-alpha) * loss_ce
+        )
 
         loss.backward()
+
         optimizer.step()
 
         train_loss += loss.item()
 
+
     student.eval()
+
     val_loss = 0
 
     with torch.no_grad():
+
         for x, y in val_loader:
-            x, y = x.to(device), y.to(device)
+
+            x = x.to(device)
+            y = y.to(device)
 
             outputs = student(x)
-            loss = ce_loss(outputs, y)
+
+            loss = ce_loss(
+                outputs,
+                y
+            )
 
             val_loss += loss.item()
 
-    print(f"Epoch {epoch+1}/{epochs} | Train Loss: {train_loss:.4f} | Val Loss: {val_loss:.4f}")
+
+    train_losses.append(train_loss)
+    val_losses.append(val_loss)
+
+
+    print(
+        f"[Epoch {epoch+1:03d}/{epochs}] "
+        f"Train Loss: {train_loss:.4f} | "
+        f"Val Loss: {val_loss:.4f}"
+    )
+
 
     if val_loss < best_val_loss:
+
         best_val_loss = val_loss
         counter = 0
-        torch.save(student.state_dict(), "best_model_fkd.pth")
+
+        best_epoch = epoch + 1
+
+        torch.save(
+            student.state_dict(),
+            "model/best_model_fkd_freqmix_fixx.pth"
+        )
+
     else:
+
         counter += 1
 
+
     if counter >= patience:
-        print("Early stopping triggered!")
+
+        print(
+            f"\nEarly stopping at epoch {epoch+1}"
+        )
+
         break
+
+
+os.makedirs(
+    "evaluasi",
+    exist_ok=True
+)
+
+np.save(
+    "evaluasi/train_loss_fkd_freqmix.npy",
+    np.array(train_losses)
+)
+
+np.save(
+    "evaluasi/val_loss_fkd_freqmix.npy",
+    np.array(val_losses)
+)
+
+
+print("\n====================================")
+print(f"Best model epoch : {best_epoch}")
+print(f"Best val loss    : {best_val_loss:.4f}")
+print("Model saved      : model/best_model_fkd_freqmix_fixx.pth")
+print("Loss history saved in /evaluasi")
+print("====================================")
 
 print("🔥 Training FKD selesai!")
