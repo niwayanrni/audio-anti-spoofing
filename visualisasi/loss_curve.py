@@ -63,7 +63,7 @@ plt.xticks(fontsize=9)
 plt.yticks(fontsize=9)
 
 plt.suptitle(
-    "AASIST baseline",
+    "Skenario 3",
     fontsize=16,
     fontweight='bold',
     y=1.02
