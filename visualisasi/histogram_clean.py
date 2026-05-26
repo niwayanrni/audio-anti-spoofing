@@ -2,10 +2,10 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-scenario_name = "Skenario 4"
+scenario_name = "Skenario 4 Best Model Noisy"
 
-score_path = "visualisasi/scores_s4.npy"
-label_path = "visualisasi/labels_s4.npy"
+score_path = "visualisasi/saved_metric/scores_s2.npy"
+label_path = "visualisasi/saved_metric/labels_s2.npy"
 
 scores = np.load(score_path)
 labels = np.load(label_path)
@@ -13,23 +13,23 @@ labels = np.load(label_path)
 bonafide_scores = scores[labels == 0]
 spoof_scores = scores[labels == 1]
 
-
 plt.figure(figsize=(8, 5))
 
 plt.hist(
     bonafide_scores,
-    bins=30,
+    bins=20,
     alpha=0.7,
     label="Bonafide (0)"
 )
 
 plt.hist(
     spoof_scores,
-    bins=30,
+    bins=20,
     alpha=0.7,
     label="Spoof (1)"
 )
 
+plt.xlim(0,1)
 
 plt.title(
     f"Histogram Distribusi Score: {scenario_name}"

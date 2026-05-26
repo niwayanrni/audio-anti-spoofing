@@ -16,13 +16,13 @@ from data_loader import AudioDataset
 MODEL_PATH = os.path.join(
     BASE_DIR,
     "model",
-    "best_model_fkd_freqmix_fixx.pth"
+    "best_model_noise.pth"
 )
 
 DATA_PATH = os.path.join(
     BASE_DIR,
     "processed_data",
-    "test"
+    "test_noisy"
 )
 
 
@@ -54,6 +54,10 @@ model.load_state_dict(
 model.eval()
 
 
+# ==============================
+# Hitung parameter model
+# ==============================
+
 total_params = sum(
     p.numel()
     for p in model.parameters()
@@ -65,18 +69,7 @@ trainable_params = sum(
     if p.requires_grad
 )
 
-
-if total_params >= 1e6:
-
-    complexity = f"{total_params/1e6} M"
-
-elif total_params >= 1e3:
-
-    complexity = f"{total_params/1e3} K"
-
-else:
-
-    complexity = str(total_params)
+parameter_k = total_params / 1e3
 
 
 scores = []
@@ -194,14 +187,24 @@ print(
     f"{'EER (%)':<15}"
     f"{'min t-DCF':<15}"
     f"{'Inference(ms)':<20}"
-    f"{'Kompleksitas':<20}"
+    f"{'Parameter(K)':<20}"
 )
 
 print(
     f"{eer_new*100:<15.6f}"
     f"{min_tdcf_new:<15.6f}"
     f"{avg_ms:<20.4f}"
-    f"{complexity:<20}"
+    f"{parameter_k:<20.3f}"
+)
+
+print("")
+
+print(
+    f"Total Parameter : {total_params:,}"
+)
+
+print(
+    f"Trainable Parameter : {trainable_params:,}"
 )
 
 print("")
