@@ -2,11 +2,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 train_loss = np.load(
-    "visualisasi/saved_metric/train_loss_noise.npy"
+    "visualisasi/saved_metric/train_loss_fkd_noise_noES.npy"
 )
 
 val_loss = np.load(
-    "visualisasi/saved_metric/val_loss_noise.npy"
+    "visualisasi/saved_metric/val_loss_fkd_noise_noES.npy"
 )
 
 epochs = range(
@@ -28,7 +28,7 @@ plt.xlabel("Epoch", fontsize=10)
 plt.ylabel("Loss", fontsize=10)
 
 plt.title(
-    "Train Loss with Early Stopping",
+    "Train Loss without Early Stopping",
     fontsize=13,
     fontweight='bold',
     pad=15
@@ -51,7 +51,7 @@ plt.xlabel("Epoch", fontsize=10)
 plt.ylabel("Loss", fontsize=10)
 
 plt.title(
-    "Validation Loss with Early Stopping",
+    "Validation Loss without Early Stopping",
     fontsize=13,
     fontweight='bold',
     pad=15
@@ -63,7 +63,7 @@ plt.xticks(fontsize=9)
 plt.yticks(fontsize=9)
 
 plt.suptitle(
-    "Skenario 3",
+    "Skenario 4",
     fontsize=16,
     fontweight='bold',
     y=1.02
@@ -72,7 +72,7 @@ plt.suptitle(
 plt.tight_layout()
 
 plt.savefig(
-    "visualisasi/hasil/loss_vall_skenario3.png",
+    "visualisasi/hasil/loss_vall_skenario4_full.png",
     dpi=300,
     bbox_inches='tight'
 )
